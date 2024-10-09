@@ -1,0 +1,43 @@
+---
+- name: Install Docker and Docker-Compose
+  hosts: webserver2
+  become: yes
+  tasks:
+    - name: Update apt cache
+      apt:  update_cache=yes force_apt_get=yes cache_valid_time=3600
+    - name: Ensuring Docker is installed
+      apt:
+        name: docker.io
+        state: present
+    - name: Ensuring Docker-Compose is installed
+      get_url:
+        url: https://github.com/docker/compose/releases/download/v2.29.7/docker-compose-Linux-{{lookup('pipe', 'uname -m')}}
+        dest: /usr/local/bin/docker-compose
+        mode: +x
+
+- name: Start Docker daemon
+  hosts: webserver2
+  become: yes
+  tasks:
+    - name: Ensuring docker daemon is running
+      systemd:
+        name: docker
+        state: started
+
+- name: Add user to docker group
+  hosts: webserver2
+  become: yes
+  tasks:
+    - name: Adding user to docker group 
+      user:
+        name: azureuser
+        groups: docker
+        append: yes
+    - name: Resetting the connection to server
+      meta: reset_connection
+
+- name: Test docker
+  hosts: webserver2
+  tasks:
+    - name: Pulling nginx image
+      command: docker pull nginx
