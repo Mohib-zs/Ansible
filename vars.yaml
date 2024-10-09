@@ -1,0 +1,4 @@
+location: /mnt/c/Users/mohib/IdeaProjects/test-node-app
+user_home_dir: /home/{{user_name}}
+user_name: nodeuser
+version: 1.0.0

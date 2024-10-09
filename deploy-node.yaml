@@ -1,0 +1,58 @@
+---
+- name: Install Node and NPM
+  hosts: webserver1
+  become: yes
+  tasks:
+    - name: Update apt cache
+      apt: update_cache=yes force_apt_get=yes cache_valid_time=3600
+    - name: Install nodejs, npm and acl
+      apt:
+        pkg:
+          - nodejs
+          - npm
+          - acl
+
+- name: Create new linux user for node app
+  hosts: webserver1
+  become: yes
+  vars_files:
+  - vault.yaml
+  - vars.yaml 
+  tasks:
+    - name: Create linux user
+      user:
+        name: "{{user_name}}"
+        comment: Node server admin
+        groups: sudo
+        state: present
+        password: "{{ nodeuser_password | password_hash('sha512') }}"       #"{{}}" for variable when followed by colon so that ansible does not mistake it for yaml dictionary
+      register: user_creation_result                #Register and execute variable to get play info output
+    - debug: msg={{user_creation_result}}             #{{}} when followed by anything else
+
+- name: Deploy Nodejs app
+  hosts: webserver1
+  become: yes
+  become_user: "{{user_name}}"
+  vars_files:
+  - vault.yaml
+  - vars.yaml 
+  tasks:
+    - name: Unpack nodejs tar file
+      unarchive: 
+        src: "{{location}}/nodejs-app-{{version}}.tgz"
+        dest: "{{user_home_dir}}"
+      register: user_creation_result
+    - debug: msg={{user_creation_result}}
+    - name: Install dependencies
+      npm:
+        path: "{{user_home_dir}}/package"
+    - name: Start the application
+      command:                #command is more secure but doesn't allow symbols like &, | etc. Should be 1st priority
+        chdir: "{{user_home_dir}}/package/app"
+        cmd: node server
+      async: 1000
+      poll: 0
+    - name: Ensure app is running
+      shell: ps aux | grep node       #Shell injection is more open but also more flexible. Should be 2nd piriority
+      register: app_status
+    - debug: msg={{app_status.stdout_lines}}

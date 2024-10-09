@@ -1,0 +1,6 @@
+[webserver]
+webserver1 ansible_host=mohibzahid.eastus.cloudapp.azure.com ansible_ssh_private_key_file=/home/mohib/.ssh/id_rsa 
+webserver2 ansible_host=docker-vm.eastus.cloudapp.azure.com ansible_ssh_private_key_file=/home/mohib/.ssh/docker-vm_key.pem
+
+[webserver:vars]
+ansible_user=azureuser
