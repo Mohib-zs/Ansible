@@ -38,10 +38,23 @@
     - name: Resetting the connection to server
       meta: reset_connection
 
-- name: Test docker
+- name: Start docker containers
   hosts: webserver2
+  vars_files:
+  - vault.yaml
   tasks:
-    - name: Create a docker container
-      docker_container:
-        name: nginx-test
-        image: nginx
+    - name: Copy docker compose file
+      copy:
+        src: /mnt/c/Users/mohib/Ansible/docker-compose.yaml
+        dest: /home/azureuser/docker-compose.yaml
+
+    - name: Login into docker hub
+      docker_login:
+        registry_url: https://registry-1.docker.io/
+        username: mohibshaikh
+        password: "{{docker_password}}"
+
+    - name: Start containers from compose
+      community.docker.docker_compose_v2:
+        project_src: /home/azureuser
+        state: present
