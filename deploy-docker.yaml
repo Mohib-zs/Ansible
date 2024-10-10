@@ -4,16 +4,17 @@
   become: yes
   tasks:
     - name: Update apt cache
-      apt:  update_cache=yes force_apt_get=yes cache_valid_time=3600
-    - name: Ensuring Docker is installed
       apt:
-        name: docker.io
+        update_cache: yes
+        force_apt_get: yes
+        cache_valid_time: 3600
+
+    - name: Ensuring Docker and Docker-Compose Plugin is installed
+      apt:
+        pkg:
+          - docker.io
+          - docker-compose-v2
         state: present
-    - name: Ensuring Docker-Compose is installed
-      get_url:
-        url: https://github.com/docker/compose/releases/download/v2.29.7/docker-compose-Linux-{{lookup('pipe', 'uname -m')}}
-        dest: /usr/local/bin/docker-compose
-        mode: +x
 
 - name: Start Docker daemon
   hosts: webserver2
@@ -33,11 +34,14 @@
         name: azureuser
         groups: docker
         append: yes
+
     - name: Resetting the connection to server
       meta: reset_connection
 
 - name: Test docker
   hosts: webserver2
   tasks:
-    - name: Pulling nginx image
-      command: docker pull nginx
+    - name: Create a docker container
+      docker_container:
+        name: nginx-test
+        image: nginx
