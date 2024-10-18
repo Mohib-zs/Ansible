@@ -1,0 +1,11 @@
+- name: Ensure group mohib exists
+  group:
+    name: "{{ user_name }}"
+    state: present
+- name: Creating user {{ user_name }} and adding to {{ groups }} groups 
+  user:
+    name: "{{ user_name }}"
+    group: "{{ group_name }}"
+    groups: "{{ user_groups }}"
+    append: yes
+    state: present

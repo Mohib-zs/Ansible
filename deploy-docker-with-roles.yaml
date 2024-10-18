@@ -1,0 +1,42 @@
+---
+- name: Install Docker and Docker-Compose
+  hosts: webserver1
+  become: yes
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        force_apt_get: yes
+        cache_valid_time: 3600
+
+    - name: Ensuring Docker and Docker-Compose Plugin is installed
+      apt:
+        pkg:
+          - docker.io
+          - docker-compose-v2
+          - acl
+        state: present
+
+- name: Start Docker daemon
+  hosts: webserver1
+  become: yes
+  tasks:
+    - name: Ensuring docker daemon is running
+      systemd:
+        name: docker
+        state: started
+
+- name: Create user {{ user_name }} and add to {{ user_groups }} groups
+  hosts: webserver1
+  become: yes
+  roles:
+    - create_user
+
+- name: Start docker containers
+  hosts: webserver1
+  become: yes
+  become_user: "{{ user_name }}"
+  vars_files:
+  - vault.yaml
+  roles:
+    - start_containers
