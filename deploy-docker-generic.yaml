@@ -1,0 +1,64 @@
+---
+- name: Install Docker and Docker-Compose
+  hosts: rg_my_app_resources
+  become: yes
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        force_apt_get: yes
+        cache_valid_time: 3600
+
+    - name: Ensuring Docker and Docker-Compose Plugin is installed
+      apt:
+        pkg:
+          - docker.io
+          - docker-compose-v2
+          - acl
+        state: present
+
+- name: Start Docker daemon
+  hosts: rg_my_app_resources
+  become: yes
+  tasks:
+    - name: Ensuring docker daemon is running
+      systemd:
+        name: docker
+        state: started
+
+- name: Create user mohib and add to docker group
+  hosts: rg_my_app_resources
+  become: yes
+  tasks:
+    - name: Ensure group mohib exists
+      group:
+        name: mohib
+        state: present
+    - name: Creating user mohib and adding to docker group 
+      user:
+        name: mohib
+        group: mohib
+        groups: docker,sudo
+        append: yes
+        state: present
+
+- name: Start docker containers
+  hosts: rg_my_app_resources
+  become: yes
+  become_user: mohib
+  vars_files:
+  - vault.yaml
+  tasks:
+    - name: Copy docker compose file
+      copy:
+        src: /mnt/c/Users/mohib/Ansible/docker-compose.yaml
+        dest: /home/mohib/docker-compose.yaml
+
+    - name: Login into docker hub
+      docker_login:
+        username: mohibshaikh
+        password: "{{docker_password}}"
+
+    - name: Start containers from compose
+      community.docker.docker_compose_v2:
+        project_src: /home/mohib
